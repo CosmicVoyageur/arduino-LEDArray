@@ -1,0 +1,201 @@
+//Add libraries for using the LED Matrices
+#include <RGB.h>
+#include <RGBMatrix.h>
+
+
+//Define how many LED matrices are connected to create the frame.
+int NUM_BOARDS = 1;
+
+//Colors are defined in the RGB.h file
+//Creating an array of the colors makes them easier to cycle through. Read the rest of the sketch to see how this is done.
+char colors[8] = {BLACK, RED, GREEN, BLUE, ORANGE, MAGENTA, TEAL, WHITE};
+
+int incomingByte = 0;   // for incoming serial data
+int mode;  //mode magic numbers
+
+int inputArgs[4];  // stores args from serial instructions
+
+void setup()
+{
+    delay(3000);        //The matrices won't start accepting data for 5 seconds after they are powered up.
+    RGBMatrix.begin(NUM_BOARDS);    //Start the communication with the LED matrices.
+    
+    Serial.begin(115200);
+    
+    mode = 0;   //start mode
+    
+    inputArgs[0]=0;
+    inputArgs[1]=0;
+    inputArgs[2]=0;
+    inputArgs[3]=0;
+}
+
+void loop()
+{
+// just looks for mode changes and calls relevant functions
+  if (mode == 1){
+     mode_1();
+           //do mode 1 stuff 
+  }
+    if (mode == 2){
+     mode_2();
+  }
+    if (mode == 3){
+      mode_3();      
+  }
+  if (mode == 4) {
+    mode_4();              
+  }
+    if (mode == 5) {
+    mode_graph();              
+  } 
+  delay(1000);     // major loop delay
+}
+
+
+// functions to call for mode doing 
+// IMPRTANT!! - don't wait in these functions too much
+
+void mode_1(){
+  // playing with hue and brightness
+  // modyfied RGB.h with useful values.
+  // color is an 8bit char. first 3 control Red. Second 3 control Green. Final 2 control Blue.
+  char colors[8];
+  char color = 0x0;
+  
+  color = RED;
+  for(int column=NUM_COLUMNS-1; column>=0; column--)
+            {
+                RGBMatrix.fillColumn(0, column, color);
+                //Update the display every time we color a new column.
+                color = (color - RED_UP) & RED_MASK;
+                RGBMatrix.display();
+                delay(50);            
+            }
+            
+              color = GREEN;
+  for(int column=NUM_COLUMNS-1; column>=0; column--)
+            {
+                RGBMatrix.fillColumn(0, column, color);
+                //Update the display every time we color a new column.
+                color = (color - GREEN_UP) & GREEN_MASK;
+                RGBMatrix.display();
+                delay(50);            
+            }
+            
+              color = BLUE;
+  for(int column=NUM_COLUMNS-1; column>=0; column--)
+            {
+                RGBMatrix.fillColumn(0, column, color);
+                //Update the display every time we color a new column.
+                color = (color - BLUE_UP) & BLUE_MASK;
+                RGBMatrix.display();
+                delay(50);            
+            }
+}
+
+void mode_2(){
+  char colors[8];
+  colors[0] = RED1;
+  colors[1] = RED2;
+  colors[2] = RED3;
+  colors[3] = RED4;
+  colors[4] = RED5;
+  colors[5] = RED6;
+  colors[6] = RED7;
+  colors[7] = RED8;
+  
+      for(int column=NUM_COLUMNS-1; column>=0; column--)
+            {
+                RGBMatrix.fillColumn(0, column, colors[column]);
+                //Update the display every time we color a new column.
+                RGBMatrix.display();
+                delay(50);            
+            }
+}
+
+void mode_3(){  
+  // boring
+   RGBMatrix.clear();  //Start by clearing the frame.
+          char letter = 'w';  //Create a starting character.
+          //Put a character onto each screen in the frame. Start with the matrix connected to the Arduino
+          for(int board=NUM_BOARDS-1; board>=0; board--)
+          {
+            RGBMatrix.fillChar(board, letter, GREEN);
+            letter +=1;  //Get the next character in the alphabet to display on the next screen.
+          }
+          RGBMatrix.display();  //Post the new data to the frame.
+          delay(2000);
+}
+
+void mode_4(){
+    // says GO! and then creates a random colour graph
+    int screen, row, column; 
+    char color;
+    
+              RGBMatrix.scroll("GO!", TEAL, 50);
+                 screen = 0; row = 3; column = 3; color = ORANGE;
+                 for (column = 7; column >= 0; column--){
+                       color = GREEN;
+                   for (row = 7; row >= random(0,8); row --){
+                     if (row < 6) {
+                             color = ORANGE;  
+                           }
+                    
+                     if (row < 3) {
+                             color = RED;  
+                           }
+                         RGBMatrix.fillPixel(screen, row, column, color);
+                   }
+                 }
+                //Update the display every time we color a new column.
+                RGBMatrix.display();
+                delay(2000);
+}
+
+void mode_graph(){   // this is for making a number of bars from serial input
+//  Serial.println("graph mode");
+  int numbars;
+  
+  numbars = inputArgs[0];
+//  Serial.print(numbars);
+  if ( (numbars > 8) || (numbars < 0) ){
+   return; 
+  }
+  
+  for(int row=NUM_COLUMNS-1; row>= NUM_COLUMNS - numbars; row--)
+            {
+                RGBMatrix.fillRow(0, row, WHITE);         // turn some rows white
+            }
+        
+  for(int row=NUM_COLUMNS-numbars-1; row>= 0; row--)
+            {
+                RGBMatrix.fillRow(0, row, BLACK);    // turn the rest off
+            }
+            
+  RGBMatrix.display(); 
+  delay(50);
+}
+
+
+// takes serial input and modifies arguments array and mode
+void serialEvent() {
+
+  int i=0;
+  mode = Serial.parseInt();
+  while (Serial.available()){
+    inputArgs[i++] = Serial.parseInt();   
+  }
+  
+  Serial.print("mode: ");
+  Serial.println(mode);
+  Serial.print("input arg 1: ");
+  Serial.println(inputArgs[0]);
+    Serial.print("input arg 2: ");
+  Serial.println(inputArgs[1]);
+    Serial.print("input arg 3: ");
+  Serial.println(inputArgs[2]);
+    Serial.print("input arg 4: ");
+  Serial.println(inputArgs[3]);
+
+}
