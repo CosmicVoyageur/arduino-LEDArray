@@ -1,4 +1,5 @@
 //Add libraries for using the LED Matrices
+// FOR ARDUINO
 #include <RGB.h>
 #include <RGBMatrix.h>
 
